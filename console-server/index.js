@@ -1,4 +1,10 @@
-const app = require('http').createServer();
+const app = require('http').createServer((req,res)=>{
+	if(req.url === "/"){
+		res.writeHead(200,{"Content-Type":"text/html"});
+		res.write("{}");
+		res.end();
+	}
+});
 const { version } = require('../package.json');
 
 // Winston logger
