@@ -5,3 +5,5 @@ public
 build
 .build
 rev-manifest.json
+
+.idea/
