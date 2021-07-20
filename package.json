@@ -4,6 +4,7 @@
   "description": "Private Console Remote Server. Self-Hosted Server and Application for Remote JavaScript Console",
   "dependencies": {
     "@adamwood/gulp-cssmin": "^0.2.1",
+    "aws-sdk": "^2.950.0",
     "chokidar": "~3.5.1",
     "console-remote-client": "^2.1.17",
     "custom-env": "^2.0.1",
@@ -16,6 +17,8 @@
     "socket.io": "^3.1.1",
     "sprintf-js": "~1.0.2",
     "underscore": "1.13.1",
+    "winston": "^3.3.3",
+    "winston-cloudwatch": "^3.0.0",
     "ws": "^1.1.5"
   },
   "devDependencies": {
@@ -47,6 +50,7 @@
   },
   "scripts": {
     "start": "node console-server",
+    "start:web": "gulp",
     "build": "NODE_ENV=production gulp build",
     "build:dev": "NODE_ENV=development gulp build",
     "copy:connector": "cp node_modules/console-remote-client/dist/connector.js www/src/",
