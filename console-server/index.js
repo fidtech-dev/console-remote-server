@@ -1,4 +1,5 @@
 const app = require('http').createServer((req,res)=>{
+	// Defining the / endpoint as a health endpoint to keep the instance alive in heroku
 	if(req.url === "/"){
 		res.writeHead(200,{"Content-Type":"text/html"});
 		res.write("{}");
@@ -7,20 +8,17 @@ const app = require('http').createServer((req,res)=>{
 });
 const { version } = require('../package.json');
 
-// Winston logger
+/** //////////// Winston logger **/
 const winston  = require('winston');
 const WinstonCloudWatch = require('winston-cloudwatch');
-
-const logger = winston.createLogger({
-	transports: [ new winston.transports.Console()]
-});
-
 const AWS = require('aws-sdk');
 
+// Configure AWS region
 AWS.config.update({
 	region: 'sa-east-1'
 });
 
+// Split logs by day using the log stream name
 const dateObj = new Date();
 const month = dateObj.getUTCMonth() + 1; //months from 1-12
 const day = dateObj.getUTCDate();
@@ -30,27 +28,19 @@ winston.add(new WinstonCloudWatch({
 	logGroupName: 'photofied-client-logs',
 	logStreamName: `logs_${year}_${month}_${day}`
 }));
-// End windston logger
 
+/**  //////////// End winston logger */
 require('custom-env').env(process.env.NODE_ENV || 'development');
 
 if (process.env.USE_PORT) process.env.PORT = process.env.USE_PORT;
-const ignoreList = process.env.IGNORE_CHANNELS ? process.env.IGNORE_CHANNELS.split(',') : [];
+const allowedChannels = process.env.ALLOWED_CHANELLS ? process.env.ALLOWED_CHANELLS.split(',') : [];
 
 const io = require('socket.io')(app, {
 	cors: {
 		methods: ['GET', 'POST'],
+		origin: process.env.CORS_ALLOWED_ORIGIN.split(",")
 	},
 });
-
-// eslint-disable-next-line no-console
-console.log(
-	`\nRemote Console Personal Server ver: ${version} host: ${process.env.SERVER_PROTOCOL}://${
-		process.env.SERVER_DOMAIN
-	} env: ${process.env.NODE_ENV ? process.env.NODE_ENV : 'development'} ${
-		process.env.PORT ? `port: ${process.env.PORT}` : 81
-	}`
-);
 
 app.listen(process.env.PORT || 81);
 io.serveClient(false);
@@ -59,6 +49,7 @@ io.use((socket, next) => {
 	return next(new Error('Authentication error'));
 });
 
+// Handle socket events
 io.on('connection', function (socket) {
 	socket.on('command', function (data) {
 		if (!data.channel) data.channel = 'public';
@@ -67,7 +58,7 @@ io.on('connection', function (socket) {
 
 	socket.on('channel', function (channel) {
 		socket.join(channel);
-		if (!ignoreList.includes(channel)) {
+		if (allowedChannels.includes(channel)) {
 			socket.join(channel);
 			// eslint-disable-next-line no-console
 			console.info('join channel:', channel);
@@ -89,6 +80,9 @@ io.on('connection', function (socket) {
 	});
 });
 
+// Looks up the list of args and checks if an arg is a well formed JSON using a regex
+// If one of the args is an stringified JSON, it parses the arg and re stringifies the entire array
+// This is used to stored the data in AWS log stream in a more readable format
 const preprocess = function(data){
 	if(data && data.args){
 		data.args = data.args.map(d=>{
@@ -107,3 +101,13 @@ const preprocess = function(data){
 	}
 
 };
+
+// Server Up message
+// eslint-disable-next-line no-console
+console.log(
+	`\nRemote Console Personal Server ver: ${version} host: ${process.env.SERVER_PROTOCOL}://${
+		process.env.SERVER_DOMAIN
+	} env: ${process.env.NODE_ENV ? process.env.NODE_ENV : 'development'} ${
+		process.env.PORT ? `port: ${process.env.PORT}` : 81
+	}`
+);
