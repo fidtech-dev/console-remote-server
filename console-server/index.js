@@ -84,6 +84,7 @@ io.on('connection', function (socket) {
 // If one of the args is an stringified JSON, it parses the arg and re stringifies the entire array
 // This is used to stored the data in AWS log stream in a more readable format
 const preprocess = function(data){
+	const channel = data.channel;
 	if(data && data.args){
 		data.args = data.args.map(d=>{
 			let d1 = d.replace("[color=red]","");
@@ -95,6 +96,7 @@ const preprocess = function(data){
 			}
 			return d1;
 		});
+		data.channel = channel;
 		return JSON.stringify(data);
 	}else{
 		return "";
